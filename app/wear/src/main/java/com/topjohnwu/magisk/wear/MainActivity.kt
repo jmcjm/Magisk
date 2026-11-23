@@ -53,6 +53,7 @@ import com.topjohnwu.magisk.ui.flash.FlashUtils
 import com.topjohnwu.magisk.ui.flash.queryDisplayName
 import com.topjohnwu.magisk.ui.flash.sanitizeDisplayName
 import com.topjohnwu.magisk.ui.navigation.Route
+import com.topjohnwu.magisk.ui.superuser.SuperuserGrantViewModel
 import com.topjohnwu.magisk.ui.superuser.SuperuserViewModel
 import com.topjohnwu.magisk.ui.unsupportedMessages
 import com.topjohnwu.magisk.wear.files.PickScreen
@@ -61,6 +62,7 @@ import com.topjohnwu.magisk.wear.nav.LocalWearNavigator
 import com.topjohnwu.magisk.wear.nav.WearNavigator
 import com.topjohnwu.magisk.wear.nav.WearRoute
 import com.topjohnwu.magisk.wear.nav.rememberWearNavigator
+import com.topjohnwu.magisk.wear.superuser.GrantScreen
 import com.topjohnwu.magisk.wear.superuser.SuperuserDetailScreen
 import com.topjohnwu.magisk.wear.superuser.SuperuserScreen
 import com.topjohnwu.magisk.wear.theme.WearTheme
@@ -145,7 +147,11 @@ class MainActivity : ComponentActivity(), SplashScreenHost {
                                     SuperuserDetailScreen(key.uid, vm, navigator)
                                 }
                                 entry<Route.SuperuserGrant> {
-                                    Placeholder(stringResource(CoreR.string.superuser_grant))
+                                    val vm: SuperuserGrantViewModel = viewModel(factory = VMFactory)
+                                    LaunchedEffect(Unit) {
+                                        vm.startLoading()
+                                    }
+                                    GrantScreen(vm)
                                 }
                                 entry<Route.Action> { key -> Placeholder(key.name) }
                                 entry<WearRoute.Superuser> {
