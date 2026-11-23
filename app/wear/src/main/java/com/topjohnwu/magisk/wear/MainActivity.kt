@@ -51,8 +51,11 @@ import com.topjohnwu.magisk.core.base.SplashController
 import com.topjohnwu.magisk.core.base.SplashScreenHost
 import com.topjohnwu.magisk.core.wrap
 import com.topjohnwu.magisk.ui.flash.FlashUtils
+import com.topjohnwu.magisk.ui.flash.FlashViewModel
 import com.topjohnwu.magisk.ui.flash.queryDisplayName
 import com.topjohnwu.magisk.ui.flash.sanitizeDisplayName
+import com.topjohnwu.magisk.ui.home.HomeViewModel
+import com.topjohnwu.magisk.ui.install.InstallViewModel
 import com.topjohnwu.magisk.ui.log.LogViewModel
 import com.topjohnwu.magisk.ui.module.ActionViewModel
 import com.topjohnwu.magisk.ui.module.ModuleViewModel
@@ -62,6 +65,9 @@ import com.topjohnwu.magisk.ui.superuser.SuperuserViewModel
 import com.topjohnwu.magisk.ui.unsupportedMessages
 import com.topjohnwu.magisk.wear.files.PickScreen
 import com.topjohnwu.magisk.wear.home.HomeScreen
+import com.topjohnwu.magisk.wear.install.FlashScreen
+import com.topjohnwu.magisk.wear.install.InstallScreen
+import com.topjohnwu.magisk.wear.install.RestoreScreen
 import com.topjohnwu.magisk.wear.log.LogScreen
 import com.topjohnwu.magisk.wear.module.ActionScreen
 import com.topjohnwu.magisk.wear.module.ModuleDetailScreen
@@ -150,12 +156,35 @@ class MainActivity : ComponentActivity(), SplashScreenHost {
                                 )
                             ),
                             entryProvider = entryProvider {
-                                entry<Route.Main> { HomeScreen(navigator) }
+                                entry<Route.Main> {
+                                    // Owned by the activity, so the Restore screen shares it, and
+                                    // its loading state, with this one
+                                    val vm: HomeViewModel = viewModel(
+                                        viewModelStoreOwner = this@MainActivity, factory = VMFactory
+                                    )
+                                    HomeScreen(navigator, vm)
+                                }
                                 entry<Route.DenyList> {
                                     Placeholder(stringResource(CoreR.string.denylist))
                                 }
-                                entry<Route.Flash> {
-                                    Placeholder(stringResource(CoreR.string.flash_screen_title))
+                                entry<Route.Flash> { key ->
+                                    val vm: FlashViewModel = viewModel(factory = VMFactory)
+                                    if (vm.isInterrupted) {
+                                        // Restored after process death: nothing is left to show
+                                        LeaveInterruptedScreen(navigator, key)
+                                        return@entry
+                                    }
+                                    LaunchedEffect(key) {
+                                        if (vm.flashAction.isEmpty()) {
+                                            vm.flashAction = key.action
+                                            vm.flashUri = key.additionalData?.toUri()
+                                            vm.usbDevice = key.usbDevice
+                                            vm.startFlashing()
+                                        }
+                                    }
+                                    FlashScreen(vm, action = key.action, onLeave = {
+                                        if (navigator.current() == key) navigator.pop()
+                                    })
                                 }
                                 entry<Route.SuperuserDetail> { key ->
                                     // Owned by the activity, so the list and its details share one
@@ -215,14 +244,18 @@ class MainActivity : ComponentActivity(), SplashScreenHost {
                                     ModuleDetailScreen(key.dir, vm, navigator)
                                 }
                                 entry<WearRoute.Install> {
-                                    Placeholder(stringResource(CoreR.string.install))
+                                    val vm: InstallViewModel = viewModel(factory = VMFactory)
+                                    InstallScreen(vm, navigator)
                                 }
                                 entry<WearRoute.Settings> {
                                     Placeholder(stringResource(CoreR.string.settings))
                                 }
                                 entry<WearRoute.Pick> { key -> PickScreen(key.kind, navigator) }
-                                entry<WearRoute.Restore> {
-                                    Placeholder(stringResource(CoreR.string.restore_img))
+                                entry<WearRoute.Restore> { key ->
+                                    val vm: HomeViewModel = viewModel(
+                                        viewModelStoreOwner = this@MainActivity, factory = VMFactory
+                                    )
+                                    RestoreScreen(vm, navigator, key)
                                 }
                             }
                         )
