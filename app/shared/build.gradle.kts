@@ -24,4 +24,6 @@ dependencies {
     api(libs.compose.runtime)
     api(libs.navigation3.runtime)
     implementation(libs.core.ktx)
+
+    testImplementation(libs.junit)
 }
