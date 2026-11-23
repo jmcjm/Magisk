@@ -54,6 +54,8 @@ import com.topjohnwu.magisk.core.ktx.toast
 import com.topjohnwu.magisk.ui.settings.SettingsDialog
 import com.topjohnwu.magisk.ui.settings.SettingsUiState
 import com.topjohnwu.magisk.ui.settings.SettingsViewModel
+import com.topjohnwu.magisk.wear.fork.ChannelWarningDialog
+import com.topjohnwu.magisk.wear.fork.needsChannelWarning
 import com.topjohnwu.magisk.wear.nav.CollectNavEvents
 import com.topjohnwu.magisk.wear.nav.WearNavigator
 import com.topjohnwu.magisk.core.R as CoreR
@@ -83,6 +85,8 @@ fun SettingsScreen(viewModel: SettingsViewModel, navigator: WearNavigator) {
         onPauseOrDispose {}
     }
     CollectNavEvents(viewModel, navigator)
+    // An upstream channel picked by the user, waiting for the warning to be confirmed
+    var pendingChannel by rememberSaveable { mutableStateOf<Int?>(null) }
 
     val state = rememberTransformingLazyColumnState()
     ScreenScaffold(state) { contentPadding ->
@@ -113,7 +117,10 @@ fun SettingsScreen(viewModel: SettingsViewModel, navigator: WearNavigator) {
             item {
                 ChannelPicker(
                     current = uiState.selectedUpdateChannelIndex,
-                    onSelect = viewModel::setUpdateChannel,
+                    onSelect = { channel ->
+                        if (needsChannelWarning(channel)) pendingChannel = channel
+                        else viewModel.setUpdateChannel(channel)
+                    },
                 )
             }
             if (uiState.isCustomChannel) {
@@ -144,6 +151,14 @@ fun SettingsScreen(viewModel: SettingsViewModel, navigator: WearNavigator) {
         dialog = uiState.activeDialog as? SettingsDialog.CustomChannelUrl,
         onSave = viewModel::saveCustomChannelUrl,
         onDismiss = viewModel::dismissDialog,
+    )
+    ChannelWarningDialog(
+        channel = pendingChannel,
+        onConfirm = { channel ->
+            pendingChannel = null
+            viewModel.setUpdateChannel(channel)
+        },
+        onDismiss = { pendingChannel = null },
     )
 }
 

@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="wear_fork_channel_warning_title">Upstream channel</string>
+    <string name="wear_fork_channel_warning_msg">Updates from this channel are upstream Magisk builds, signed with a different key, so they cannot replace this app.</string>
+</resources>
