@@ -59,6 +59,7 @@ import com.topjohnwu.magisk.ui.superuser.SuperuserGrantViewModel
 import com.topjohnwu.magisk.ui.superuser.SuperuserViewModel
 import com.topjohnwu.magisk.ui.unsupportedMessages
 import com.topjohnwu.magisk.wear.files.PickScreen
+import com.topjohnwu.magisk.wear.fork.ForkDefaults
 import com.topjohnwu.magisk.wear.home.HomeScreen
 import com.topjohnwu.magisk.wear.install.FlashScreen
 import com.topjohnwu.magisk.wear.install.InstallScreen
@@ -116,6 +117,8 @@ class MainActivity : ComponentActivity(), SplashScreenHost {
 
     @SuppressLint("InlinedApi")
     override fun onCreateUi(savedInstanceState: Bundle?) {
+        ForkDefaults.apply(Config.prefs) { Config.checkUpdate = it }
+
         val unsupported = unsupportedMessages()
 
         // Only ask on startup, not every time the activity is recreated
