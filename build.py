@@ -379,6 +379,17 @@ def build_app():
     header(f"Output: {target}")
 
 
+def build_wear():
+    header("* Building the Magisk app for Wear OS")
+    apk = build_apk(":wear")
+
+    # Rename wear-variant.apk to app-wear-variant.apk
+    source = apk
+    target = apk.parent / f"app-{apk.name}"
+    mv(source, target)
+    header(f"Output: {target}")
+
+
 def build_test():
     old_release = args.release
     # Test APK has to be built as release to prevent classname clash
@@ -438,6 +449,7 @@ def cleanup():
 def build_all():
     build_native()
     build_app()
+    build_wear()
     build_test()
 
 
@@ -828,6 +840,10 @@ def parse_args():
 
     app_parser = subparsers.add_parser("app", help="build the Magisk app")
 
+    wear_parser = subparsers.add_parser(
+        "wear", help="build the Magisk app for Wear OS"
+    )
+
     test_parser = subparsers.add_parser("test", help="build the test app")
 
     clean_parser = subparsers.add_parser("clean", help="cleanup")
@@ -890,6 +906,7 @@ def parse_args():
     rustup_parser.set_defaults(func=setup_rustup)
     gen_parser.set_defaults(func=gen_ide)
     app_parser.set_defaults(func=build_app)
+    wear_parser.set_defaults(func=build_wear)
     test_parser.set_defaults(func=build_test)
     emu_parser.set_defaults(func=setup_avd)
     patch_parser.set_defaults(func=patch)

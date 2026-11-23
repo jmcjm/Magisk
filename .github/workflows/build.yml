@@ -52,6 +52,13 @@ jobs:
           path: app/apk/build/outputs
           compression-level: 9
 
+      - name: Upload Wear OS mapping and native debug symbols
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ github.sha }}-wear-symbols
+          path: app/wear/build/outputs
+          compression-level: 9
+
   test-build:
     name: Test building on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}

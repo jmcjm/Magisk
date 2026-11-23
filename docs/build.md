@@ -30,6 +30,7 @@
 - To build everything and create the final Magisk APK, run `./build.py all`.
 - You can also build specific sub-components; call `./build.py -h` to see all available actions. \
   For each action, use `-h` to access help (e.g. `./build.py native -h`).
+- To build only the Magisk app for Wear OS, run `./build.py wear` (output: `out/app-wear-<debug|release>.apk`).
 - Configure the build by using `config.prop`. A sample `config.prop.sample` is provided.
 - If `sccache` or `ccache` is installed and available in your `PATH`, `build.py` will automatically use it to speed up C++ and Rust builds.
 - To run standalone tools (such as `./gradlew`, `cargo`, or `ndk-build`) with the same environment variables configured by `build.py`, prefix the command with `scripts/env.py` (e.g. `scripts/env.py ./gradlew :apk:assembleDebug`). You can also run `./build.py clippy` to lint Rust code or `./build.py cargo ...` to invoke Cargo directly against the native workspace.
