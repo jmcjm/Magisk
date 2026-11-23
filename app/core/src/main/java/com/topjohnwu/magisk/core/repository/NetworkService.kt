@@ -1,5 +1,7 @@
 package com.topjohnwu.magisk.core.repository
 
+import android.content.pm.PackageManager
+import com.topjohnwu.magisk.core.AppContext
 import com.topjohnwu.magisk.core.BuildConfig
 import com.topjohnwu.magisk.core.Config
 import com.topjohnwu.magisk.core.Config.Value.BETA_CHANNEL
@@ -24,6 +26,13 @@ class NetworkService(
     private val raw: RawUrl,
     private val api: GithubApiServices,
 ) {
+    // Watches run the Wear OS app, which is released as its own APK
+    private val isWatch by lazy {
+        AppContext.packageManager.hasSystemFeature(PackageManager.FEATURE_WATCH)
+    }
+
+    private fun ReleaseAssets.isForDevice() = name.contains("wear", ignoreCase = true) == isWatch
+
     suspend fun fetchUpdate() = safe {
         var info = when (Config.updateChannel) {
             DEFAULT_CHANNEL -> if (BuildConfig.DEBUG) fetchDebugUpdate() else fetchStableUpdate()
@@ -33,7 +42,7 @@ class NetworkService(
             CUSTOM_CHANNEL -> fetchCustomUpdate(Config.customChannelUrl)
             else -> throw IllegalArgumentException()
         }
-        if (info.versionCode < Info.env.versionCode &&
+        if (info.versionCode in 0 until Info.env.versionCode &&
             Config.updateChannel == DEFAULT_CHANNEL &&
             !BuildConfig.DEBUG
         ) {
@@ -76,8 +85,8 @@ class NetworkService(
 
     private inline fun Release?.asInfo(
         selector: (ReleaseAssets) -> Boolean = {
-            // Default selector picks the non-debug APK
-            it.name.run { endsWith(".apk") && !contains("debug") }
+            // Default selector picks the non-debug APK for this kind of device
+            it.name.run { endsWith(".apk") && !contains("debug") } && it.isForDevice()
         }): UpdateInfo {
         return if (this == null) UpdateInfo()
         else if (tag[0] == 'v') asPublicInfo(selector)
@@ -85,21 +94,24 @@ class NetworkService(
     }
 
     private inline fun Release.asPublicInfo(selector: (ReleaseAssets) -> Boolean): UpdateInfo {
+        // No APK for this kind of device, never offer one made for another
+        val asset = assets.find(selector) ?: return UpdateInfo()
         val version = tag.drop(1)
         val date = dateFormat.format(createdTime)
         return UpdateInfo(
             version = version,
             versionCode = versionCode,
-            link = assets.find(selector)!!.url,
+            link = asset.url,
             note = "## $date $name\n\n$body"
         )
     }
 
     private inline fun Release.asCanaryInfo(selector: (ReleaseAssets) -> Boolean): UpdateInfo {
+        val asset = assets.find(selector) ?: return UpdateInfo()
         return UpdateInfo(
             version = name.substring(8, 16),
             versionCode = versionCode,
-            link = assets.find(selector)!!.url,
+            link = asset.url,
             note = "## $name\n\n$body"
         )
     }
@@ -113,7 +125,9 @@ class NetworkService(
     private suspend fun fetchBetaUpdate() = findRelease { true }.asInfo()
 
     private suspend fun fetchDebugUpdate() =
-        findRelease { true }.asInfo { it.name == "app-debug.apk" }
+        findRelease { true }.asInfo {
+            it.name == if (isWatch) "app-wear-debug.apk" else "app-debug.apk"
+        }
 
     private suspend fun fetchCustomUpdate(url: String): UpdateInfo {
         val info = raw.fetchUpdateJson(url).magisk
